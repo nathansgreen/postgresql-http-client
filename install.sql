@@ -1,3 +1,12 @@
+--
+-- to install plpython:
+-- apt-get install postgresql-plpython-9.5
+--
+
+begin;
+
+drop schema if exists http_client cascade;
+
 create schema http_client;
 
 do $$
@@ -17,9 +26,9 @@ create type http_client.response as (
 );
 
 create or replace function http_client._get(url text, timeout integer, headers jsonb) returns http_client.response as $$
-try:
     from urllib2 import Request, urlopen, HTTPError
     import json
+
     res = {}
     res['url_requested'] = url
     res['body'] = res['status_code'] = res['url_received'] = None
@@ -45,10 +54,6 @@ try:
     else:
         res['is_json'] = False
     return res
-except Exception as e:
-    msg = "Error in http_clien._get(): exception {0} occured."
-    res = msg.format(e.__class__.__name__)
-    return res
 $$ language plpython2u volatile;
 
 create or replace function http_client.get(query text, headers jsonb) returns http_client.response as $$
@@ -63,3 +68,4 @@ create or replace function http_client.get(query text) returns http_client.respo
     select http_client.get(query, '{}'::jsonb);
 $$ language sql volatile;
 
+commit;
